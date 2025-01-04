@@ -31,7 +31,7 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
-            window.open_devtools();
+            // window.open_devtools();
             #[cfg(target_os = "windows")]
             apply_mica(&window, None)
                 .expect("Unsupported platform! 'apply_blur' is only supported on Windows");

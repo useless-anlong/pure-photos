@@ -32,7 +32,7 @@
                     <p>请三思而后行，当前操作为永久删除，删除后将无法找回</p>
                     <span>如需要移动到回收站，请到文件资源管理器操作</span>
                     <div class="flyout-tips-footer">
-                        <button id="cancelDeleteBtn">取消</button>
+                        <button id="cancelDeleteBtn" onclick="deleteFlyout()">取消</button>
                         <button id="deleteImageBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
                                 viewBox="0 0 24 24" fill="none" height="20">
@@ -163,9 +163,11 @@
         打开本地图片
     </button>
     <!-- 图片显示区域 -->
-    <div class="viewer">
-        <div class="test_deep-link-urls"></div>
-        <img id="image" src="" alt="No image" class="draggable" style="display: none;">
+    <div id="image-container">
+        <div class="viewer">
+            <div class="test_deep-link-urls"></div>
+            <img id="image" src="" alt="No image" class="draggable" style="display: none;">
+        </div>
     </div>
     <script type="module" src="./main.js"></script>
     <script>

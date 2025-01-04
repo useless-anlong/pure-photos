@@ -59,49 +59,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 监听图片加载完成
     image.addEventListener('load', updateImageSize);
-    
+
     // 初始更新尺寸
     updateImageSize();
 });
 
 const currentWidthContent = document.querySelector('.current-width');
 
-// 放大按钮
-zoomInBtn.addEventListener('click', () => {
+// 统一的缩放处理函数
+// 统一的缩放处理函数
+function handleZoom(isZoomIn) {
     const aspectRatio = image.naturalWidth / image.naturalHeight;
-    if (aspectRatio > 1) {
-        currentWidth = Math.min(MAX_WIDTH, currentWidth + 10); // 每次放大10%
-        image.style.width = `${currentWidth}%`;
-        image.style.height = 'auto';
-        currentWidthContent.textContent = `${currentWidth}%`;
-        if (currentHeight > 100) { dragImage(true) } else { dragImage(false) }
-    } else {
-        currentHeight = Math.min(MAX_HEIGHT, currentHeight + 10); // 每次放大10%
-        image.style.height = `${currentHeight}%`;
-        image.style.width = 'auto';
-        currentWidthContent.textContent = `${currentHeight}%`;
-        if (currentHeight > 100) { dragImage(true) } else { dragImage(false) }
-    }
-    image.style.transform = `rotate(${currentRotation}deg)`;
-});
+    const zoomDelta = 10; // 缩放步长
 
-// 缩小按钮
-zoomOutBtn.addEventListener('click', () => {
-    const aspectRatio = image.naturalWidth / image.naturalHeight;
     if (aspectRatio > 1) {
-        currentWidth = Math.max(MIN_WIDTH, currentWidth - 10); // 最小宽度为10%
+        // 宽图处理
+        const newWidth = isZoomIn
+            ? Math.min(MAX_WIDTH, currentWidth + zoomDelta)
+            : Math.max(MIN_WIDTH, currentWidth - zoomDelta);
+
+        currentWidth = newWidth;
         image.style.width = `${currentWidth}%`;
         image.style.height = 'auto';
         currentWidthContent.textContent = `${currentWidth}%`;
-        if (currentWidth > 100) { dragImage(true) } else { dragImage(false) }
+        dragImage(currentWidth > 100);
     } else {
-        currentHeight = Math.max(MIN_HEIGHT, currentHeight - 10); // 最小高度为10%
+        // 高图处理
+        const newHeight = isZoomIn
+            ? Math.min(MAX_HEIGHT, currentHeight + zoomDelta)
+            : Math.max(MIN_HEIGHT, currentHeight - zoomDelta);
+
+        currentHeight = newHeight;
         image.style.height = `${currentHeight}%`;
         image.style.width = 'auto';
         currentWidthContent.textContent = `${currentHeight}%`;
-        if (currentHeight > 100) { dragImage(true) } else { dragImage(false) }
+        dragImage(currentHeight > 100);
     }
+
     image.style.transform = `rotate(${currentRotation}deg)`;
+}
+
+// 修改放大按钮事件处理
+zoomInBtn.addEventListener('click', () => handleZoom(true));
+
+// 修改缩小按钮事件处理
+zoomOutBtn.addEventListener('click', () => handleZoom(false));
+
+// 修改滚轮事件处理
+image.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    handleZoom(event.deltaY < 0);
 });
 
 // 旋转按钮
@@ -110,43 +117,6 @@ rotateBtn.addEventListener('click', () => {
     image.style.transform = `rotate(${currentRotation}deg)`;
 });
 
-// 添加滚轮操作
-image.addEventListener('wheel', (event) => {
-    event.preventDefault();
-    if (event.deltaY > 0) {
-        const aspectRatio = image.naturalWidth / image.naturalHeight;
-        if (aspectRatio > 1) {
-            currentWidth = Math.max(MIN_WIDTH, currentWidth - 10); // 最小宽度为10%
-            image.style.width = `${currentWidth}%`;
-            image.style.height = 'auto';
-            currentWidthContent.textContent = `${currentWidth}%`;
-            if (currentWidth > 100) { dragImage(true) } else { dragImage(false) }
-        } else {
-            currentHeight = Math.max(MIN_HEIGHT, currentHeight - 10); // 最小高度为10%
-            image.style.height = `${currentHeight}%`;
-            image.style.width = 'auto';
-            currentWidthContent.textContent = `${currentHeight}%`;
-            if (currentHeight > 100) { dragImage(true) } else { dragImage(false) }
-        }
-    } else {
-        const aspectRatio = image.naturalWidth / image.naturalHeight;
-        if (aspectRatio > 1) {
-            currentWidth = Math.max(MIN_WIDTH, currentWidth + 10); // 最小宽度为10%
-            image.style.width = `${currentWidth}%`;
-            image.style.height = 'auto';
-            currentWidthContent.textContent = `${currentWidth}%`;
-            if (currentWidth > 100) { dragImage(true) } else { dragImage(false) }
-        } else {
-            currentHeight = Math.max(MIN_HEIGHT, currentHeight + 10); // 最小高度为10%
-            image.style.height = `${currentHeight}%`;
-            image.style.width = 'auto';
-            currentWidthContent.textContent = `${currentHeight}%`;
-            if (currentHeight > 100) { dragImage(true) } else { dragImage(false) }
-        }
-    }
-    image.style.transform = `rotate(${currentRotation}deg)`;
-    // scaleSlider.value = currentWidth;
-});
 
 import { getCurrent } from '@tauri-apps/plugin-deep-link';
 const urls = await getCurrent();
@@ -161,6 +131,9 @@ await onOpenUrl((urls) => {
     toggleToolButtons(true);
     // container.innerHTML = `deep link: ${urls}`;
 });
+
+const titleFileName = document.querySelector('.title-file-name');
+const windowTitle = document.querySelector('.window-title');
 
 // 打开文件对话框
 exploreFilesBtn.addEventListener('click', async () => {
@@ -179,9 +152,7 @@ exploreFilesBtn.addEventListener('click', async () => {
         // 打开图片
         const assetUrl = convertFileSrc(file);
         // 处理图片文件名 & 调整标题栏
-        const windowTitle = document.querySelector('.window-title');
         const fileName = file.replace(/^.*[\\\/]/, '');
-        const titleFileName = document.querySelector('.title-file-name');
         windowTitle.style.marginTop = '0';
         titleFileName.textContent = `${fileName}`;
         currentWidthContent.textContent = `${currentWidth}%`;
@@ -231,6 +202,16 @@ exploreFilesBtn.addEventListener('click', async () => {
                     windowTitle.style.marginTop = '1px';
                     titleFileName.textContent = `轻照片`;
                     currentWidthContent.textContent = `未打开图片文件`;
+                    // 隐藏删除对话框
+                    const flyout = document.querySelector(`#delete-flyout`);
+                    const button = document.querySelector(`#deleteFlyoutBtn`);
+                    if (flyout.classList.contains('active')) {
+                        flyout.classList.remove('active');
+                        button.classList.remove('active');
+                        setTimeout(() => {
+                            flyout.classList.remove('fade-out-animate');
+                        }, 200);
+                    }
                 }, 1800)
             } else {
                 alert("No file selected")
@@ -240,43 +221,62 @@ exploreFilesBtn.addEventListener('click', async () => {
 });
 
 function dragImage(enable = false) {
-    const element = document.querySelector(".draggable");
-
-    if (!enable) {
-        element.onmousedown = null;
-        document.onmouseup = null;
-        document.onmousemove = null;
+    const viewer = document.querySelector(".viewer");
+    const image = document.querySelector("#image");
+    
+    // 添加元素存在性检查
+    if (!viewer || !image) {
+        console.warn('未找到必要的DOM元素');
         return;
     }
 
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    if (!enable) {
+        viewer.style.overflow = 'hidden';
+        image.style.cursor = 'default';
+        return;
+    }
 
-    function dragMouseDown(e) {
-        e = e || window.event;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let scrollLeft = 0;
+    let scrollTop = 0;
+
+    function handleDragStart(e) {
+        isDragging = true;
+        image.style.cursor = 'grabbing';
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        scrollLeft = viewer.scrollLeft;
+        scrollTop = viewer.scrollTop;
+    }
+
+    function handleDragMove(e) {
+        if (!isDragging) return;
         e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
+
+        // 计算鼠标移动的距离
+        const moveX = e.clientX - startX;
+        const moveY = e.clientY - startY;
+
+        // 反向设置滚动位置（鼠标向右移动，内容向左滚动）
+        viewer.scrollLeft = scrollLeft - moveX;
+        viewer.scrollTop = scrollTop - moveY;
     }
 
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
+    function handleDragEnd() {
+        isDragging = false;
+        image.style.cursor = 'grab';
     }
 
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-    }
-
-    element.onmousedown = dragMouseDown;
+    viewer.style.overflow = 'auto';
+    image.style.cursor = 'grab';
+    
+    image.addEventListener('mousedown', handleDragStart);
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+    document.addEventListener('mouseleave', handleDragEnd);
 }
 
 
