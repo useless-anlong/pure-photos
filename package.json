@@ -1,0 +1,32 @@
+{
+    "name": "photos",
+    "private": true,
+    "version": "0.1.2",
+    "description": "A lightweight photo app for LTSC users.",
+    "type": "module",
+    "scripts": {
+        "tauri": "tauri",
+        "dev": "vite dev",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@tauri-apps/cli": "^2"
+    },
+    "dependencies": {
+        "@tauri-apps/api": "^2.1.1",
+        "@tauri-apps/plugin-deep-link": "~2",
+        "@tauri-apps/plugin-dialog": "~2",
+        "@tauri-apps/plugin-fs": "~2",
+        "@tauri-apps/plugin-shell": "~2",
+        "vite": "^6.0.5"
+    },
+    "browserslist": [
+        "last 1 version",
+        "not dead",
+        "not < 2%",
+        "supports es6-module",
+        "supports es6-module-dynamic-import",
+        "supports es6-module-import-meta",
+        "supports es2020"
+    ]
+}
