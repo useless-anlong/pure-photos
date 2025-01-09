@@ -64,9 +64,18 @@ document.addEventListener('DOMContentLoaded', () => {
     updateImageSize();
 });
 
+// 定义滚动处理函数
+const handleScroll = () => {
+    if (image) {
+        const imgRect = image.getBoundingClientRect();
+        const headerOpacity = imgRect.top <= 37 ? 1 : 0;
+        document.documentElement.style.setProperty('--header-background-opacity', headerOpacity);
+        console.log('headerOpacity:', headerOpacity, 'imgRect.top:', imgRect.top);
+    }
+};
+
 const currentWidthContent = document.querySelector('.current-width');
 
-// 统一的缩放处理函数
 // 统一的缩放处理函数
 function handleZoom(isZoomIn) {
     const aspectRatio = image.naturalWidth / image.naturalHeight;
@@ -97,6 +106,7 @@ function handleZoom(isZoomIn) {
     }
 
     image.style.transform = `rotate(${currentRotation}deg)`;
+    handleScroll();
 }
 
 // 修改放大按钮事件处理
@@ -117,6 +127,8 @@ rotateBtn.addEventListener('click', () => {
     image.style.transform = `rotate(${currentRotation}deg)`;
 });
 
+// 在适当的位置添加滚动监听（比如初始化时）
+window.addEventListener('scroll', handleScroll);
 
 import { getCurrent } from '@tauri-apps/plugin-deep-link';
 const urls = await getCurrent();
@@ -178,6 +190,7 @@ exploreFilesBtn.addEventListener('click', async () => {
             const sizeInfo = document.querySelector('.size-info');
             resolutionInfo.textContent = `${img.width} × ${img.height}`;
             sizeInfo.textContent = fileSize;
+            handleScroll();
         };
 
         image.src = assetUrl;
@@ -223,7 +236,7 @@ exploreFilesBtn.addEventListener('click', async () => {
 function dragImage(enable = false) {
     const viewer = document.querySelector(".viewer");
     const image = document.querySelector("#image");
-    
+
     // 添加元素存在性检查
     if (!viewer || !image) {
         console.warn('未找到必要的DOM元素');
@@ -245,7 +258,7 @@ function dragImage(enable = false) {
     function handleDragStart(e) {
         isDragging = true;
         image.style.cursor = 'grabbing';
-        
+
         startX = e.clientX;
         startY = e.clientY;
         scrollLeft = viewer.scrollLeft;
@@ -272,7 +285,7 @@ function dragImage(enable = false) {
 
     viewer.style.overflow = 'auto';
     image.style.cursor = 'grab';
-    
+
     image.addEventListener('mousedown', handleDragStart);
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd);
