@@ -68,9 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
 const handleScroll = () => {
     if (image) {
         const imgRect = image.getBoundingClientRect();
-        const headerOpacity = imgRect.top <= 37 ? 1 : 0;
+        const headerOpacity = imgRect.top <= 38 ? 1 : 0;
         document.documentElement.style.setProperty('--header-background-opacity', headerOpacity);
-        console.log('headerOpacity:', headerOpacity, 'imgRect.top:', imgRect.top);
+        // console.log('headerOpacity:', headerOpacity, 'imgRect.top:', imgRect.top);
     }
 };
 
