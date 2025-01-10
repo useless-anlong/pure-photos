@@ -1,8 +1,11 @@
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-dialog';
+// import { open } from '@tauri-apps/plugin-dialog';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
+// import { open as openInExplorer } from '@tauri-apps/plugin-shell';
 import { remove } from '@tauri-apps/plugin-fs';
-import { appDataDir, join } from '@tauri-apps/api/path';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+// import { appDataDir, join } from '@tauri-apps/api/path';
+// import { getCurrentWindow, getAll, getCurrent, Window } from '@tauri-apps/api/window';
+import { getCurrentWindow, Window } from '@tauri-apps/api/window';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 
 const appWindow = getCurrentWindow();
@@ -160,9 +163,9 @@ rotateBtn.addEventListener('click', () => {
 // 在适当的位置添加滚动监听（比如初始化时）
 window.addEventListener('scroll', handleScroll);
 
-import { getCurrent } from '@tauri-apps/plugin-deep-link';
-const urls = await getCurrent();
-console.log('mode 01 - deep link:', urls);
+// import { getCurrent } from '@tauri-apps/plugin-deep-link';
+// const urls = await getCurrent();
+// console.log('mode 01 - deep link:', urls);
 
 await onOpenUrl((urls) => { console.log('mode 03 - deep link:', urls) });
 
@@ -180,7 +183,7 @@ const windowTitle = document.querySelector('.window-title');
 // 打开文件对话框
 async function handleFileOpen() {
     const imgElement = document.querySelector('#image');
-    const file = await open({
+    const file = await openDialog({
         multiple: false,
         directory: false,
         open: true,
@@ -243,7 +246,11 @@ async function handleFileOpen() {
             sizeInfo.textContent = fileSize;
             colorDepthInfo.textContent = colorDepth;
             dpiInfo.textContent = `${dpi} DPI`;
-            imageFilePath.textContent = file;
+
+            const pathOnly = file.replace(/[^\\]*$/, '\...');
+            imageFilePath.textContent = pathOnly;
+            // 存储完整路径
+            imageFilePath.setAttribute('data-full-path', file);
 
             handleScroll();
         };
@@ -251,6 +258,17 @@ async function handleFileOpen() {
         image.src = assetUrl;
         exploreFilesBtn.classList.add('hide');
     }
+    // 浏览文件目录按钮
+    const openAtExplorerBtn = document.querySelector('.open-at-explorer-btn');
+    // openAtExplorerBtn.addEventListener('click', async () => {
+    //     await openInExplorer('explorer', [' /select, "', file, '"']);
+    // });
+    // openAtExplorerBtn.addEventListener('click', async () => {
+    //     await openInExplorer(file);
+    // });
+    openAtExplorerBtn.addEventListener('click', async () => {
+        await invoke('show_in_folder', { path: file });
+    });
     // 长按删除按钮
     setupLongPressDelete(deleteImageBtn, file, {
         timeout: 1000,
@@ -393,3 +411,53 @@ document.addEventListener('contextmenu', (e) => {
     e.preventDefault()
     return false
 }, false);
+
+// 创建关于窗口
+// async function createAboutWindow() {
+//     const appWindow = new Window('app-about');
+
+//     appWindow.once('tauri://created', function () {
+//         // 窗口创建成功后显示窗口
+//         appWindow.show();
+//         console.log('窗口创建成功')
+//     });
+//     appWindow.once('tauri://error', function (e) {
+//         // 发生错误创建窗口时销毁窗口实例
+//         appWindow.destroy();
+//         console.log('窗口创建时出错：', e)
+//     });
+
+//     // emit an event to the backend
+//     await appWindow.emit("some-event", "data");
+//     // listen to an event from the backend
+//     const unlisten = await appWindow.listen("event-name", e => { });
+//     unlisten();
+// }
+async function createAboutWindow() {
+    const windowOptions = {
+        label: 'app-about',
+        url: 'about.html',
+        width: 600,
+        height: 400,
+        resizable: true,
+        title: '关于窗口'
+    };
+    const appWindow = new Window('app-about', windowOptions);
+
+    appWindow.once('tauri://created', function () {
+        appWindow.show();
+        console.log('窗口创建成功');
+    });
+    appWindow.once('tauri://error', function (e) {
+        appWindow.destroy();
+        console.log('窗口创建时出错：', e);
+    });
+
+    // emit an event to the backend
+    await appWindow.emit("some-event", "data");
+    // listen to an event from the backend
+    const unlisten = await appWindow.listen("event-name", e => { });
+    unlisten();
+}
+
+document.querySelector('.about-btn').addEventListener('click', createAboutWindow);

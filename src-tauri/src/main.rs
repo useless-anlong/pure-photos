@@ -4,8 +4,21 @@
 use tauri::Manager;
 use window_vibrancy::*;
 
+#[tauri::command]
+fn show_in_folder(path: String) {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        Command::new("explorer")
+            .args(["/select,", &path])
+            .spawn()
+            .unwrap();
+    }
+}
+
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
@@ -19,6 +32,7 @@ fn main() {
                 .expect("Unsupported platform! 'apply_blur' is only supported on Windows");
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![show_in_folder])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
