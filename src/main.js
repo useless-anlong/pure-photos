@@ -74,6 +74,36 @@ const handleScroll = () => {
     }
 };
 
+function setupLongPressDelete(deleteButton, file, options) {
+    const {
+        timeout = 1000,
+        onDeleteSuccess = () => { },
+    } = options;
+
+    let deleteTimer;
+    let isHoldingDeleteButton;
+
+    deleteButton.addEventListener('mousedown', () => {
+        isHoldingDeleteButton = true;
+        deleteTimer = setTimeout(async () => {
+            if (isHoldingDeleteButton && file) {
+                await remove(file);
+                onDeleteSuccess();
+            }
+        }, timeout);
+    });
+
+    deleteButton.addEventListener('mouseup', () => {
+        isHoldingDeleteButton = false;
+        clearTimeout(deleteTimer);
+    });
+
+    deleteButton.addEventListener('mouseleave', () => {
+        isHoldingDeleteButton = false;
+        clearTimeout(deleteTimer);
+    });
+}
+
 const currentWidthContent = document.querySelector('.current-width');
 
 // 统一的缩放处理函数
@@ -148,14 +178,14 @@ const titleFileName = document.querySelector('.title-file-name');
 const windowTitle = document.querySelector('.window-title');
 
 // 打开文件对话框
-exploreFilesBtn.addEventListener('click', async () => {
+async function handleFileOpen() {
     const imgElement = document.querySelector('#image');
     const file = await open({
         multiple: false,
         directory: false,
         open: true,
         filters: [
-            { name: 'Images', extensions: ["jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "heic", "avif"] }
+            { name: 'Images', extensions: ["jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "heic", "avif"] }
         ]
     });
     // const file = './test.jpeg';
@@ -179,17 +209,42 @@ exploreFilesBtn.addEventListener('click', async () => {
             fileSize = (blob.size / 1024).toFixed(2) + ' KB';
         }
         const img = new Image();
+        img.crossOrigin = "anonymous";
         img.src = assetUrl;
         imgElement.style.display = 'block';
         toggleToolButtons(true);
+
+        // 图片加载完成事件
         img.onload = () => {
             const aspectRatio = img.width / img.height;
             document.documentElement.style.setProperty('--image-aspect-ratio', aspectRatio);
-            // 分别显示分辨率和文件大小
+
+            // 创建离屏canvas分析图片
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            // 获取色彩位数和DPI
+            const imageData = ctx.getImageData(0, 0, 1, 1);
+            const hasAlpha = imageData.data[3] !== 255;
+            const colorDepth = hasAlpha ? '32 (RGBA)' : '24 (RGB)';
+            const dpi = Math.round(window.devicePixelRatio * 96);
+
+            // 更新所有信息显示
             const resolutionInfo = document.querySelector('.resolution-info');
             const sizeInfo = document.querySelector('.size-info');
-            resolutionInfo.textContent = `${img.width} × ${img.height}`;
+            const colorDepthInfo = document.querySelector('.color-depth-info');
+            const dpiInfo = document.querySelector('.dpi-info');
+            const imageFilePath = document.querySelector('.image-file-path');
+
+            resolutionInfo.textContent = `${img.width}×${img.height}`;
             sizeInfo.textContent = fileSize;
+            colorDepthInfo.textContent = colorDepth;
+            dpiInfo.textContent = `${dpi} DPI`;
+            imageFilePath.textContent = file;
+
             handleScroll();
         };
 
@@ -197,41 +252,35 @@ exploreFilesBtn.addEventListener('click', async () => {
         exploreFilesBtn.classList.add('hide');
     }
     // 长按删除按钮
-    const timeout = 1000;
-    let deleteTimer;
-    let isHoldingDeleteButton;
-    deleteImageBtn.addEventListener('mousedown', (e) => {
-        isHoldingDeleteButton = true;
-        deleteTimer = setTimeout(async () => {
-            if (file) {
-                await remove(file);
-                setTimeout(() => {
-                    // location.reload()
-                    image.src = '';
-                    toggleToolButtons(false);
-                    imgElement.style.display = 'none';
-                    exploreFilesBtn.classList.remove('hide');
-                    // 重置标题栏
-                    windowTitle.style.marginTop = '1px';
-                    titleFileName.textContent = `轻照片`;
-                    currentWidthContent.textContent = `未打开图片文件`;
-                    // 隐藏删除对话框
-                    const flyout = document.querySelector(`#delete-flyout`);
-                    const button = document.querySelector(`#deleteFlyoutBtn`);
-                    if (flyout.classList.contains('active')) {
-                        flyout.classList.remove('active');
-                        button.classList.remove('active');
-                        setTimeout(() => {
-                            flyout.classList.remove('fade-out-animate');
-                        }, 200);
-                    }
-                }, 1800)
-            } else {
-                alert("No file selected")
-            }
-        }, timeout);
+    setupLongPressDelete(deleteImageBtn, file, {
+        timeout: 1000,
+        onDeleteSuccess: () => {
+            setTimeout(() => {
+                image.src = '';
+                toggleToolButtons(false);
+                imgElement.style.display = 'none';
+                exploreFilesBtn.classList.remove('hide');
+                // 重置标题栏
+                windowTitle.style.marginTop = '1px';
+                titleFileName.textContent = `轻照片`;
+                currentWidthContent.textContent = `未打开图片文件`;
+                // 隐藏删除对话框
+                const flyout = document.querySelector(`#delete-flyout`);
+                const button = document.querySelector(`#deleteFlyoutBtn`);
+                if (flyout.classList.contains('active')) {
+                    flyout.classList.remove('active');
+                    button.classList.remove('active');
+                    setTimeout(() => {
+                        flyout.classList.remove('fade-out-animate');
+                    }, 200);
+                }
+            }, 1800);
+        }
     });
-});
+};
+
+exploreFilesBtn.addEventListener('click', handleFileOpen);
+document.querySelector('.explore-image-btn').addEventListener('click', handleFileOpen);
 
 function dragImage(enable = false) {
     const viewer = document.querySelector(".viewer");
